@@ -199,8 +199,8 @@ class MongoSession {
         // exclude results that are inactive or expired
         $result = $this->mongo->findOne(
                         array(
-                            '_id' => $id,
-                            'expiry' => array('$gte' => $expiry),
+                            'session_id' => $id,
+                            'expiry' => array('$lte' => $expiry),
                             'active' => 1
                         )
         );
@@ -227,20 +227,14 @@ class MongoSession {
 
         // create new session data
         $new_obj = array(
-            '_id' => $id,
+            'session_id' => $id,
             'data' => $data,
             'active' => 1,
             'expiry' => $expiry
         );
 
-        // check for existing session for merge
-        if (!empty($this->session)) {
-            $obj = (array) $this->session;
-            $new_obj = array_merge($obj, $new_obj);
-        }
-
         // atomic update
-        $query = array('_id' => $id);
+        $query = array('session_id' => $id);
 
         // update options
         $options = array(
@@ -268,7 +262,7 @@ class MongoSession {
      * @return  bool
      */
     public function destroy($id) {
-        $this->mongo->remove(array('_id' => $id), true);
+        $this->mongo->remove(array('session_id' => $id), true);
         return true;
     }
 
