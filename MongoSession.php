@@ -31,15 +31,16 @@ class MongoSession {
         'lifetime' => 3600, // session lifetime in seconds
         'database' => 'session', // name of MongoDB database
         'collection' => 'session', // name of MongoDB collection
+        'persistent' => false, // persistent connection to DB?
+        'persistentId' => 'MongoSession', // name of persistent connection
         // array of mongo db servers
         'servers' => array(
             array(
                 'host' => Mongo::DEFAULT_HOST,
                 'port' => Mongo::DEFAULT_PORT,
                 'username' => null,
-                'password' => null,
-                'persistent' => false
-            )
+                'password' => null                
+            )            
         )
     );
     // stores the mongo db
@@ -96,13 +97,13 @@ class MongoSession {
     }
 
     /**
-     * Initialize MongoDB. There is currently no support for persistent
-     * connections.  It would be very easy to implement, I just didn't need it.
+     * Checks supplied configuration and initializes
+     * connection to database.
      *
-     * @access  private
+     * @access  protected
      * @param   array   $config
      */
-    private function _init($config) {
+    protected function _init($config) {
         // ensure they supplied a database
         if (empty($config['database'])) {
             throw new Exception('You must specify a MongoDB database to use for session storage.');
@@ -131,8 +132,19 @@ class MongoSession {
             array_push($connections, Mongo::DEFAULT_HOST . ':' . Mongo::DEFAULT_PORT);
         }
 
+        $options = array(
+            'connect' => true, // Immediately connect to MongoDB
+        );
+
+        // Add persist option if persistent connection requested
+        if($this->_config['persistent']) {
+            $option[] = array(
+                'persist' => $this->_config['persistentId']
+            );
+        }
+
         // load mongo servers
-        $mongo = new Mongo('mongodb://' . implode(',', $connections));
+        $mongo = new Mongo('mongodb://' . implode(',', $connections), $options);
 
         // load db
         try {
