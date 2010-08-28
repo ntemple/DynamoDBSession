@@ -194,13 +194,13 @@ class MongoSession {
      */
     public function read($id) {
         // retrieve valid session data
-        $expiry = time() + (int) $this->_config['lifetime'];
+        $expiry = time() - (int) $this->_config['lifetime'];
 
         // exclude results that are inactive or expired
         $result = $this->mongo->findOne(
                         array(
                             'session_id' => $id,
-                            'expiry' => array('$lte' => $expiry),
+                            'expiry' => array('$gte' => $expiry),
                             'active' => 1
                         )
         );
