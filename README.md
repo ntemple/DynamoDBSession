@@ -12,7 +12,7 @@ performing a series of AJAX requests which modify the same session data fields a
 
 Notes
 -----
--  Although the $config array contains the parameter "persistent," it is not currently used.
+-  MongoSession does support 'persistent' connections. You must however supply a 'persistentId'. See the PHP manual http://www.php.net/manual/en/mongo.construct.php
 -  Please make requests for additional functionality as I'm looking for ideas.
 
 Default Usage 
