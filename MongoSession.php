@@ -43,10 +43,12 @@ class MongoSession {
             )            
         )
     );
-    // stores the mongo db
+    // stores the database connection
+    protected $connection;
+    // stores the mongo collection
     protected $mongo;
     // stores session data results
-    private $session;
+    protected $session;
 
     /**
      * Default constructor.
@@ -144,18 +146,18 @@ class MongoSession {
         }
 
         // load mongo servers
-        $mongo = new Mongo('mongodb://' . implode(',', $connections), $options);
+        $this->connection = new Mongo('mongodb://' . implode(',', $connections), $options);
 
         // load db
         try {
-            $mongo = $mongo->selectDB($this->_config['database']);
+            $database = $this->connection->selectDB($this->_config['database']);
         } catch (InvalidArgumentException $e) {
             throw new Exception('The MongoDB database specified in the config does not exist.');
         }
 
         // load collection
         try {
-            $this->mongo = $mongo->selectCollection($this->_config['collection']);
+            $this->mongo = $database->selectCollection($this->_config['collection']);
         } catch (Exception $e) {
             throw new Exception('The MongoDB collection specified in the config does not exist.');
         }
