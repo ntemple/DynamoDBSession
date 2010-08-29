@@ -269,14 +269,15 @@ class MongoSession {
     }
 
     /**
-     * Garbage collection. Remove all expired entries atomically.
+     * Garbage collection. We currently don't remove the session data.
+     * Sessions are set to inactive. 
      *
      * @access  public
      * @return	bool
      */
     public function gc() {
         // define the query
-        $query = array('expiry' => array(':lt' => time()));
+        $query = array('expiry' => array('$lt' => time()));
 
         // specify the update vars
         $update = array('$set' => array('active' => 0));
