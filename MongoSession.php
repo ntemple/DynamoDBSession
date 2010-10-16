@@ -2,6 +2,22 @@
 
 /*
  * This MongoDB session handler is intended to store any data you see fit.
+ *
+ * Improvements to this class: 
+ *
+ *  write() - should use a find and update (truely atomic)
+ *
+ *  mongo document: _id can be the session Id. (better, no need for secondary index)
+ *
+ *  mongo safe - default to true (at least be sure we wrote it to RAM)
+ *
+ *  static methods instead of requiring an instance
+ *
+ *  less setting of cookies and session parameters. trust in the default php settings
+ *    - also less work the class has to do 
+ *
+ *  do not session_start() in here. Not compatible with things like Zend_Session
+ *
  */
 
 class MongoSession {
@@ -13,20 +29,20 @@ class MongoSession {
      * http://www.php.net/manual/en/mongocollection.update.php
      * Slower when on but minimizes any session errors when coupled with FSYNC.
      */
-    const SAFE = false;
+    const MONGO_SAFE = 2;
 
     /**
      * If TRUE, forces the session write to be synced to disk before
      * returning success.
      */
-    const FSYNC = false;
+    const MONGO_FSYNC = false;
 
     // example config with support for multiple servers
     // (helpful for sharding and replication setups)
     protected $_config = array(
         // cookie related vars
         'cookie_path' => '/',
-        'cookie_domain' => '.mofollow.com', // .mydomain.com
+        'cookie_domain' => '', 
         // session related vars
         'lifetime' => 3600, // session lifetime in seconds
         'database' => 'session', // name of MongoDB database
@@ -62,12 +78,12 @@ class MongoSession {
 
         // set object as the save handler
         session_set_save_handler(
-                array(&$this, 'open'),
-                array(&$this, 'close'),
-                array(&$this, 'read'),
-                array(&$this, 'write'),
-                array(&$this, 'destroy'),
-                array(&$this, 'gc')
+                array($this, 'open'),
+                array($this, 'close'),
+                array($this, 'read'),
+                array($this, 'write'),
+                array($this, 'destroy'),
+                array($this, 'gc')
         );
 
         // set some important session vars
@@ -92,7 +108,7 @@ class MongoSession {
                 $this->_config['cookie_path'],
                 $this->_config['cookie_domain']);
         // name the session
-        session_name('mongo_sess');
+        session_name('PHP_SESSION');
 
         // start it up
         session_start();
@@ -164,6 +180,7 @@ class MongoSession {
 
         // ensure we have proper indexing on the expiration
         $this->mongo->ensureIndex('expiry', array('expiry' => 1));
+        $this->mongo->ensureIndex('session_id', array('session_id' => 1));
     }
 
     /**
@@ -235,14 +252,13 @@ class MongoSession {
             'expiry' => $expiry
         );
 
-        // atomic update
+        // atomic update (not really...) this should be a Find and Update...
         $query = array('session_id' => $id);
 
         // update options
         $options = array(
             'upsert' => true,
-            'safe' => MongoSession::SAFE,
-            'fsync' => MongoSession::FSYNC
+            'safe'   => 1
         );
 
         // perform the update or insert
@@ -284,9 +300,8 @@ class MongoSession {
 
         // update options
         $options = array(
-            'multiple' => TRUE,
-            'safe' => MongoSession::SAFE,
-            'fsync' => MongoSession::FSYNC
+            'multiple'  => TRUE,
+            'safe'      => true
         );
 
         // update expired elements and set to inactive
