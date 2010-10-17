@@ -258,7 +258,7 @@ class MongoSession {
         // update options
         $options = array(
             'upsert' => true,
-            'safe'   => 1
+            'safe'   => true
         );
 
         // perform the update or insert
