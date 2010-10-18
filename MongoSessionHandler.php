@@ -165,16 +165,18 @@ class MongoSessionHandler
         if ($this->_gc == 1) {
             return false;
         }
-        
+        $fp = fopen('/tmp/mongo-session', 'a+'); 
         for ($retries=0; $retries < 10; $retries++) {
             $newCas = $this->_doc['cas'] + 1;
                         
             $query      = array('_id' => $id, 'cas' => $this->_doc['cas']);
-            $doc        = $this->_createDoc($id, $data, time(), $newCas);
+            $doc        = $this->_createDoc($id, $data, false, $newCas);
             $options    = array('safe' => true);
 
             $result = $this->_mongo->update($query, $doc, $options);            
             if ($result['updatedExisting'] != 1) {
+                fwrite($fp, "Retry: $retries | cas : $newCas\n");
+                
                 usleep(10000); // wait 10ms
                 $this->_getDoc($id); // re-read the current session
                 continue; 
@@ -182,7 +184,7 @@ class MongoSessionHandler
                 return true; 
             }
         }
-
+        
         return false;
     }
 
