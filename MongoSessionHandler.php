@@ -95,8 +95,8 @@ class MongoSessionHandler
 
         // boom.
         session_set_save_handler(
-            array($m, 'open'),
-            array($m, 'close'),
+            array($m, 'noop'), // open
+            array($m, 'noop'), // close 
             array($m, 'read'),
             array($m, 'write'),
             array($m, 'destroy'),
@@ -154,28 +154,9 @@ class MongoSessionHandler
     }
 
     /**
-     * Open the session, do nothing as we already have a
-     * connection to mongo.
-     *
-     * @param string $path
-     * @param string $name
-     * @return bool
+     * A no-op function, somethings just aren't worth doing.
      */
-    public function open($path, $name)
-    {
-        return true; 
-    }
-
-    /**
-     * Does nothing.
-     *
-     * @return bool
-     */
-    public function close()
-    {
-        return true;
-    }
-
+    public function noop() {}
 
     /**
      * Reads the session from Mongo, create a document if it
