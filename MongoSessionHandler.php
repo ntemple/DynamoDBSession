@@ -87,33 +87,14 @@ class MongoSessionHandler
     {
         return array(
             '_id'   => $id,
+            '_lock' => 0, // unlocked
+            '_lts'  => 0, // last lock time
             'gc'    => $gc,
             'ts'    => ($ts) ? $ts : time() + intval(ini_get('session.gc_maxlifetime')), // last touched timestamp
             'cas'   => $cas, // compare / swap token
             'd'     => $data
         );
 
-    }
-
-    /**
-     * Returns the internal mongo document, or creates
-     * one if it doesn't exist
-     *
-     * @param string $id
-     * @return array | null
-     */
-    protected function _getDoc($id)
-    {
-        $doc = $this->_mongo->findOne(array('_id' => $id));
-
-        if (!is_null($doc)) {
-            $this->_doc = $doc; 
-        } else {
-            $this->_doc = $this->_createDoc($id);
-            $this->_mongo->insert($this->_doc, array('safe' => true));
-        }
-        
-        return $this->_doc;
     }
 
     /**
@@ -149,8 +130,6 @@ class MongoSessionHandler
      */
     public function read($id)
     {
-        $doc = $this->_getDoc($id);
-        return $doc['d'];
     }
 
     /**
@@ -161,31 +140,6 @@ class MongoSessionHandler
      */
     public function write($id, $data)
     {
-        // don't update if doc is marked for GC
-        if ($this->_gc == 1) {
-            return false;
-        }
-        $fp = fopen('/tmp/mongo-session', 'a+'); 
-        for ($retries=0; $retries < 10; $retries++) {
-            $newCas = $this->_doc['cas'] + 1;
-                        
-            $query      = array('_id' => $id, 'cas' => $this->_doc['cas']);
-            $doc        = $this->_createDoc($id, $data, false, $newCas);
-            $options    = array('safe' => true);
-
-            $result = $this->_mongo->update($query, $doc, $options);            
-            if ($result['updatedExisting'] != 1) {
-                fwrite($fp, "Retry: $retries | cas : $newCas\n");
-                
-                usleep(10000); // wait 10ms
-                $this->_getDoc($id); // re-read the current session
-                continue; 
-            } else {
-                return true; 
-            }
-        }
-        
-        return false;
     }
 
     /**
@@ -196,8 +150,6 @@ class MongoSessionHandler
      */
     public function destroy($id)
     {
-        $result = $this->_mongo->remove(array('_id' => $id), array('safe' => true));
-        return ($result['ok'] == 1);
     }
 
     /**
