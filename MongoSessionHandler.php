@@ -8,22 +8,37 @@ class MongoSessionHandler
     /** @var MongoCollection */
     protected $_mongo;
 
-    /** @var array */
-    protected $_config;
+    /**
+     * Default options for the connection
+     *
+     * @var array
+     */
+    protected $_defaults = array(
+        'servers' => array('localhost:27017'),
+        'options' => array(
+            'timeout' => 10, // ms
+            'persist' => 'mongo-session'
+        )
+    );
+
 
     /**
      * Instantiate
      *
      * @param string $db
      * @param string $collection
-     * @param array $config
+     * @param array $config for the mongo connection
      */
     public function __construct($db, $collection, Array $config)
     {
-        $mongo = new Mongo();
+        $conf = (empty($config)) ? $this->_defaults : $config; 
+        $uri = 'mongodb://'.implode(',', $conf['servers']); 
+        
+        $mongo = new Mongo($uri, $conf['options']);
         $this->_mongo = $mongo->selectCollection($db, $collection);
 
-        // do something with $config.
+        $this->_mongo->ensureIndex(array('_id' => true, 'lock' => true));
+        $this->_mongo->ensureIndex(array('expire' => true));
     }
 
     /**
@@ -47,31 +62,6 @@ class MongoSessionHandler
         );
     }
 
-
-    /**
-     * Creates an internal mongo session doc.
-     *
-     * @param string $id
-     * @param string $data
-     * @param int $expire timestamp of when token expires, false = default
-     * @param int $cas  compare and swap token
-     * @param int $gc marked for garbage collection
-     * @return array
-     */
-    protected function _createDoc($id, $data='', $ts=false, $cas=0, $gc=0)
-    {
-        return array(
-            '_id'   => $id,
-            '_lock' => 0, // unlocked
-            '_lts'  => 0, // last lock time
-            'gc'    => $gc,
-            'ts'    => ($ts) ? $ts : time() + intval(ini_get('session.gc_maxlifetime')), // last touched timestamp
-            'cas'   => $cas, // compare / swap token
-            'd'     => $data
-        );
-
-    }
-
     /**
      * Gets a global (across *all* machines) lock on the session
      *
@@ -79,7 +69,7 @@ class MongoSessionHandler
      */
     protected function _lock($id)
     {
-        $remaining = 2000000; // 2 seconds timeout
+        $remaining = 30000000; // 30 seconds timeout, 30Million microsecs
         $timeout = 5000; // 5000 microseconds (5 ms)
 
         $start = microtime(true);
@@ -102,8 +92,11 @@ class MongoSessionHandler
 
             usleep($timeout);
             $remaining = $remaining - $timeout;
-            $timeout = $timeout * 2; // wait a little longer next time
-        } while ($timeout < 1000000 && $remaining > 0);
+
+            // wait a little longer next time, 1 sec max wait
+            $timeout = ($timeout < 1000000) ? $timeout * 2 : 1000000;
+
+        } while ($remaining > 0);
 
         throw new Exception('Could not get session lock');
     }
@@ -204,11 +197,12 @@ class MongoSessionHandler
      * safe=0 delete, as that will return immediately without
      * blocking php
      *
-     * @param int $max lifetime of session (remove everything older than this)
      * @return bool
      */
     public function gc($max)
     {
-
+        $results = $this->_mongo->remove(
+            array('expire' => array('$lt' => time()))
+        );
     }
 }

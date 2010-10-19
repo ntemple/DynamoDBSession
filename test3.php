@@ -1,4 +1,5 @@
 <?php
+header('Content-Type: text/plain');
 require_once('./MongoSessionHandler.php');
 MongoSessionHandler::register('session', 'session');
 
