@@ -191,7 +191,7 @@ class MongoSessionHandler
             'd'         => $data,
             'expire'    => time() + intval(ini_get('session.gc_maxlifetime'))
         );
-        $options = array('safe' => true, 'upsert' => true);
+        $options = array('safe' => true);
 
         $result = $this->_mongo->update(array('_id' => $id), $doc, $options);
 
@@ -212,8 +212,11 @@ class MongoSessionHandler
 
     /**
      * Triggers the garbage collector, we do this with a mongo
-     * safe=0 delete, as that will return immediately without
-     * blocking php
+     * safe=false delete, as that will return immediately without
+     * blocking php.
+     *
+     * Maybe it'll delete stuff, maybe it won't. The next GC
+     * will get'em.... eventually :)
      *
      * @return bool
      */
