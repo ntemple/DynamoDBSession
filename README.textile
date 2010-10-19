@@ -2,13 +2,9 @@ h1. PHP Mongo Session Driver
 
 h2. About
 
-PHP Sessions stored within MongoDB. Supports session locking so it is safe to use in an asynchronous (AJAX) environment.
-
-See <code>test-concurrency/</code> for examples. 
-
-h2. License
-
-It's MIT licensed.
+* PHP Sessions stored within MongoDB.
+* Supports session locking so it is safe to use with AJAX apps.
+* Super duper easy to use.
 
 h2. Usage
 
@@ -42,4 +38,8 @@ MongoSessionHandler::register('session', 'session', $conf);
 </code>
 </pre>
 
-When in doubt, read the code. It's only the code. Most of it is locking code and license comment anyways. :)
+When in doubt, read the code. Most of it is locking code and license comment anyways. :)
+
+h2. License
+
+It's MIT licensed.
