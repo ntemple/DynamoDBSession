@@ -12,31 +12,6 @@ class MongoSessionHandler
     protected $_config;
 
     /**
-     * Compare and Swap Token
-     *
-     * Used to make sure the session document hasn't changed
-     * between read() and write(). Ensures consistency without
-     * locking.
-     * 
-     * @var int
-     */
-    protected $_cas = 0;
-
-    /**
-     * Is this session marked for garbage collection?
-     * 
-     * @var int
-     */
-    protected $_gc = 0;
-
-    /**
-     * What we last saw the document as
-     * 
-     * @var array
-     */
-    protected $_doc = array();
-
-    /**
      * Instantiate
      *
      * @param string $db
@@ -98,6 +73,57 @@ class MongoSessionHandler
     }
 
     /**
+     * Gets a global (across *all* machines) lock on the session
+     *
+     * @param string $id session id
+     */
+    protected function _lock($id)
+    {
+        $remaining = 2000000; // 2 seconds timeout
+        $timeout = 5000; // 5000 microseconds (5 ms)
+
+        $start = microtime(true);
+        do {
+            try {
+                $query  = array('_id' => $id, 'lock' => 0);
+                $update = array('$set' => array('lock' => 1));
+                $options = array('safe' => true, 'upsert' => true);
+                $result = $this->_mongo->update($query, $update, $options);
+
+                if ($result['ok'] == 1) {
+                    return true; 
+                }
+                
+            } catch (MongoCursorException $e) {
+                if (substr($e->getMessage(), 0, 26) != 'E11000 duplicate key error') {
+                    throw $e;  // not a dup key?
+                }
+            }
+
+            usleep($timeout);
+            $remaining = $remaining - $timeout;
+            $timeout = $timeout * 2; // wait a little longer next time
+        } while ($timeout < 1000000 && $remaining > 0);
+
+        throw new Exception('Could not get session lock');
+    }
+
+    /**
+     * Releases the lock on the session
+     *
+     * @param string $id
+     *
+     */
+    protected function _unlock($id)
+    {
+        $query  = array('_id' => $id);
+        $update = array('$set' => array('lock' => 0));
+        $options = array('safe' => true);
+        $result = $this->_mongo->update($query, $update, $options);
+    }
+
+
+    /**
      * Open the session, do nothing as we already have a
      * connection to mongo.
      *
@@ -130,6 +156,13 @@ class MongoSessionHandler
      */
     public function read($id)
     {
+        $this->_lock($id);
+        $doc = $this->_mongo->findOne(array('_id' => $id));
+        if (!isset($doc['d'])) {
+            return '';
+        } else {
+            return $doc['d'];
+        }
     }
 
     /**
@@ -137,9 +170,21 @@ class MongoSessionHandler
      * 
      * @param string $id
      * @param string $data
+     * @return bool
      */
     public function write($id, $data)
     {
+        $doc = array(
+            '_id'       => $id,
+            'lock'      => 0,
+            'd'         => $data,
+            'expire'    => time() + intval(ini_get('session.gc_maxlifetime'))
+        );
+        $options = array('safe' => true, 'upsert' => true);
+
+        $result = $this->_mongo->update(array('_id' => $id), $doc, $options);
+
+        return (!$result['ok'] == 1);
     }
 
     /**
@@ -150,6 +195,8 @@ class MongoSessionHandler
      */
     public function destroy($id)
     {
+        $result = $this->_mongo->remove(array('_id' => $id), array('safe' => true));
+        return ($result['ok'] == 1); 
     }
 
     /**
@@ -164,6 +211,4 @@ class MongoSessionHandler
     {
 
     }
-
-
 }

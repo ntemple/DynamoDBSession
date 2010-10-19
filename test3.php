@@ -6,7 +6,11 @@ if ($_GET['s']) {
     session_id($_GET['s']);
 }
 
-session_start();
+try {
+    session_start();
+} catch (Exception $e) {
+    header("HTTP/1.0 500 Shit.");
+}
 
 if (!isset($_SESSION['c'])) {
     $_SESSION['c'] = 0; 
