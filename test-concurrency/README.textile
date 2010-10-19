@@ -1,52 +1,48 @@
-==== [ SUMMARY ] ====
+h1. Concurrency Testing Results
 
-Mongo w/ Locking : 684.93 trans/sec
-Mongo NO Locking : 944.29 trans/sec *
-PHP File based   : 1225.49 trans/sec
-Memcache based   : 840.34 trans/sec
+h2. Summary
 
-* PHP sessions in MongoDB with no locking is crap. In an async environment
-  it'll no doubt be a source of painful bugs. See results below.
+* Mongo w/ Locking : 684.93 trans/sec
+* Mongo NO Locking : 944.29 trans/sec (bad!)
+* PHP File based   : 1225.49 trans/sec
+* Memcache based   : 840.34 trans/sec
 
-Which solution you choose depends on your environment. It is a balance
-between reliability and performance.
+h3. Note
 
-Memcache in a clustered environment would be great but if one server goes
-down all of those user sessions will go with it. The sharding is easy,
-and will scale very well.
+PHP sessions in MongoDB with no locking is crap. In an async environment it'll no doubt be a source of painful bugs. See results below.
 
-MongoDB will provide fault tolerance and your sessions will not disappear if
-a server goes down. However, you'll have to run Replica sets and if need be
-sharding.
+Which solution you choose depends on your environment. It is a balance between reliability and performance.
 
-It'll also be quite expensive as sharding + replica sets means a lot of
-servers. There are benefits such as being able to easily query upon
+Memcache in a clustered environment would be great but if one server goes down all of those user sessions will go with it. The sharding is easy, and will scale very well.
+
+MongoDB will provide fault tolerance and your sessions will not disappear if a server goes down. However, you'll have to run Replica sets and if need be sharding.
+
+It'll also be quite expensive as sharding + replica sets means a lot of servers. There are benefits such as being able to easily query upon
 session data (who's logged in?), save meta data with sessions, etc.
 
-File based sessions are super fast. However, won't scale across a cluster
-of web servers. Though you can put a load balancer in front with 'sticky'
-sessions. 
+File based sessions are super fast. However, won't scale across a cluster of web servers. Though you can put a load balancer in front with 'sticky' sessions.
 
-==== [ Environment] ====
+h2. Environment
 
 It's a Ubuntu 10.4 VM on my Macbook Pro.
 
-==== [ Benchmarking Command ] ====
+h2. Benchmarking Commands
 
-# run 10,000 requests
-
+<pre>
+<code>
 > curl 'http://localhost:85/MongoSession/test-concurrency/clear.php';
 > siege -c 5 -f urls.txt -r 2000 -i ;
 > curl 'http://localhost:85/MongoSession/test-concurrency/test.php?s=ctest'
-    
+</code>
+</pre>
 
-==== [ MONGO w/ Locking ] ====
+h2. Mongo w/ Locking
 
-NOTE::
+h3. Note
 
-    With locking code enabled, all 10K requests make it through. This is
-    slower but necessary in an asynchronous (AJAX) web application.
+With locking code enabled, all 10K requests make it through. This is slower but necessary in an asynchronous (AJAX) web application.
 
+<pre>
 Sessions Cleared
 ** SIEGE 2.68
 ** Preparing 5 concurrent users for battle.
@@ -86,15 +82,15 @@ Array
 
 )
 Total Hits: 10000, Time: 0.065078s
+</pre>
 
-==== [ MONGO NO Locking ] ====
+h2. MONGO NO Locking
 
-NOTE::
+h3. NOTE
 
-   It's pretty obvious what happens without locking. There should be 10K
-   transactions record, yet only 6257 were written correctly. Totally
-   worthless.
+It's pretty obvious what happens without locking. There should be 10K transactions record, yet only 6257 were written correctly. Totally worthless.
 
+<pre>
 Sessions Cleared
 ** SIEGE 2.68
 ** Preparing 5 concurrent users for battle.
@@ -134,15 +130,17 @@ Array
 
 )
 Total Hits: 6257, Time: 0.059019s
+</pre>
 
-==== [ PHP File based session ] ====
+h2. PHP File based session
 
-NOTE::
+h3. NOTE
 
-    This is *fast*, but in a large scale application file based sessions
-    won't scale well. If you strace Apache you'll see flock calls. Here
-    for reference. :)
+This is *fast*, but in a large scale application file based sessions
+won't scale well. If you strace Apache you'll see flock calls. Here
+for reference. :)
 
+<pre>
 ** SIEGE 2.68
 ** Preparing 5 concurrent users for battle.
 The server is now under siege..      done.
@@ -181,18 +179,18 @@ Array
 
 )
 Total Hits: 10000, Time: 0.074883s
+</pre>
 
+h2. memcache based extensions
 
-==== [ memcache based extensions ] ====
+h3. NOTE
 
-NOTE:
-    This uses the memcache 3.04 PECL extension for sessions. In 3.04 session
-    locking was introduced. It's written in C. It's quite a bit faster
-    than the mongo + locking.
+This uses the memcache 3.04 PECL extension for sessions. In 3.04 session locking was introduced. It's written in C. It's quite a bit faster
+than the mongo + locking.
 
-    The algorithm for locking is essentially the same as I based the Mongo
-    code off of the memcache locking mechanic. (Thanks for the inspiration) :)
+The algorithm for locking is essentially the same as I based the Mongo code off of the memcache locking mechanic. (Thanks for the inspiration) :)
 
+<pre>
 ** SIEGE 2.68
 ** Preparing 5 concurrent users for battle.
 The server is now under siege..      done.
@@ -231,3 +229,4 @@ Array
 
 )
 Total Hits: 10000, Time: 0.070924s
+</pre>
