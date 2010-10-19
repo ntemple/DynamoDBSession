@@ -114,7 +114,6 @@ class MongoSessionHandler
         $remaining = 30000000; // 30 seconds timeout, 30Million microsecs
         $timeout = 5000; // 5000 microseconds (5 ms)
 
-        $start = microtime(true);
         do {
             try {
                 $query  = array('_id' => $id, 'lock' => 0);
@@ -140,6 +139,7 @@ class MongoSessionHandler
 
         } while ($remaining > 0);
 
+        // aww shit. 
         throw new Exception('Could not get session lock');
     }
 
