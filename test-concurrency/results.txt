@@ -1,0 +1,233 @@
+==== [ SUMMARY ] ====
+
+Mongo w/ Locking : 684.93 trans/sec
+Mongo NO Locking : 944.29 trans/sec *
+PHP File based   : 1225.49 trans/sec
+Memcache based   : 840.34 trans/sec
+
+* PHP sessions in MongoDB with no locking is crap. In an async environment
+  it'll no doubt be a source of painful bugs. See results below.
+
+Which solution you choose depends on your environment. It is a balance
+between reliability and performance.
+
+Memcache in a clustered environment would be great but if one server goes
+down all of those user sessions will go with it. The sharding is easy,
+and will scale very well.
+
+MongoDB will provide fault tolerance and your sessions will not disappear if
+a server goes down. However, you'll have to run Replica sets and if need be
+sharding.
+
+It'll also be quite expensive as sharding + replica sets means a lot of
+servers. There are benefits such as being able to easily query upon
+session data (who's logged in?), save meta data with sessions, etc.
+
+File based sessions are super fast. However, won't scale across a cluster
+of web servers. Though you can put a load balancer in front with 'sticky'
+sessions. 
+
+==== [ Environment] ====
+
+It's a Ubuntu 10.4 VM on my Macbook Pro.
+
+==== [ Benchmarking Command ] ====
+
+# run 10,000 requests
+
+> curl 'http://localhost:85/MongoSession/test-concurrency/clear.php';
+> siege -c 5 -f urls.txt -r 2000 -i ;
+> curl 'http://localhost:85/MongoSession/test-concurrency/test.php?s=ctest'
+    
+
+==== [ MONGO w/ Locking ] ====
+
+NOTE::
+
+    With locking code enabled, all 10K requests make it through. This is
+    slower but necessary in an asynchronous (AJAX) web application.
+
+Sessions Cleared
+** SIEGE 2.68
+** Preparing 5 concurrent users for battle.
+The server is now under siege..      done.
+Transactions:		       10000 hits
+Availability:		      100.00 %
+Elapsed time:		       14.60 secs
+Data transferred:	        3.28 MB
+Response time:		        0.01 secs
+Transaction rate:	      684.93 trans/sec
+Throughput:		        0.22 MB/sec
+Concurrency:		        4.59
+Successful transactions:       10000
+Failed transactions:	           0
+Longest transaction:	        2.57
+Shortest transaction:	        0.00
+
+Array
+(
+    [k2] => Array
+        (
+            [c] => 3250
+            [t] => 0.021065950393677
+        )
+
+    [k3] => Array
+        (
+            [c] => 5048
+            [t] => 0.033654451370239
+        )
+
+    [k1] => Array
+        (
+            [c] => 1702
+            [t] => 0.010357618331909
+        )
+
+)
+Total Hits: 10000, Time: 0.065078s
+
+==== [ MONGO NO Locking ] ====
+
+NOTE::
+
+   It's pretty obvious what happens without locking. There should be 10K
+   transactions record, yet only 6257 were written correctly. Totally
+   worthless.
+
+Sessions Cleared
+** SIEGE 2.68
+** Preparing 5 concurrent users for battle.
+The server is now under siege..      done.
+Transactions:		       10000 hits
+Availability:		      100.00 %
+Elapsed time:		       10.59 secs
+Data transferred:	        3.28 MB
+Response time:		        0.01 secs
+Transaction rate:	      944.29 trans/sec
+Throughput:		        0.31 MB/sec
+Concurrency:		        4.97
+Successful transactions:       10000
+Failed transactions:	           0
+Longest transaction:	        0.65
+Shortest transaction:	        0.00
+
+Array
+(
+    [k2] => Array
+        (
+            [c] => 2065
+            [t] => 0.031374454498291
+        )
+
+    [k1] => Array
+        (
+            [c] => 1042
+            [t] => 0.0086922645568848
+        )
+
+    [k3] => Array
+        (
+            [c] => 3150
+            [t] => 0.018952608108521
+        )
+
+)
+Total Hits: 6257, Time: 0.059019s
+
+==== [ PHP File based session ] ====
+
+NOTE::
+
+    This is *fast*, but in a large scale application file based sessions
+    won't scale well. If you strace Apache you'll see flock calls. Here
+    for reference. :)
+
+** SIEGE 2.68
+** Preparing 5 concurrent users for battle.
+The server is now under siege..      done.
+Transactions:		       10000 hits
+Availability:		      100.00 %
+Elapsed time:		        8.16 secs
+Data transferred:	        3.28 MB
+Response time:		        0.00 secs
+Transaction rate:	     1225.49 trans/sec
+Throughput:		        0.40 MB/sec
+Concurrency:		        4.93
+Successful transactions:       10000
+Failed transactions:	           0
+Longest transaction:	        0.70
+Shortest transaction:	        0.00
+
+Array
+(
+    [k2] => Array
+        (
+            [c] => 3377
+            [t] => 0.025424957275391
+        )
+
+    [k3] => Array
+        (
+            [c] => 5004
+            [t] => 0.037914991378784
+        )
+
+    [k1] => Array
+        (
+            [c] => 1619
+            [t] => 0.01154351234436
+        )
+
+)
+Total Hits: 10000, Time: 0.074883s
+
+
+==== [ memcache based extensions ] ====
+
+NOTE:
+    This uses the memcache 3.04 PECL extension for sessions. In 3.04 session
+    locking was introduced. It's written in C. It's quite a bit faster
+    than the mongo + locking.
+
+    The algorithm for locking is essentially the same as I based the Mongo
+    code off of the memcache locking mechanic. (Thanks for the inspiration) :)
+
+** SIEGE 2.68
+** Preparing 5 concurrent users for battle.
+The server is now under siege..      done.
+Transactions:		       10000 hits
+Availability:		      100.00 %
+Elapsed time:		       11.90 secs
+Data transferred:	        3.28 MB
+Response time:		        0.01 secs
+Transaction rate:	      840.34 trans/sec
+Throughput:		        0.28 MB/sec
+Concurrency:		        4.78
+Successful transactions:       10000
+Failed transactions:	           0
+Longest transaction:	        0.81
+Shortest transaction:	        0.00
+
+Array
+(
+    [k3] => Array
+        (
+            [c] => 5039
+            [t] => 0.035782098770142
+        )
+
+    [k2] => Array
+        (
+            [c] => 3343
+            [t] => 0.023991584777832
+        )
+
+    [k1] => Array
+        (
+            [c] => 1618
+            [t] => 0.011149883270264
+        )
+
+)
+Total Hits: 10000, Time: 0.070924s

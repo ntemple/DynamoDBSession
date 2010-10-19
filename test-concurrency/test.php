@@ -22,7 +22,7 @@ if (isset($_GET['v'])) {
     if (isset($_SESSION[$key])) {
         $_SESSION[$key]['c']++;
     } else {
-        $_SESSION[$key]['c'] = 0;
+        $_SESSION[$key]['c'] = 1;
     }
 
     $time = microtime(true) - $start;

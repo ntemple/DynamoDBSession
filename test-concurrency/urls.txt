@@ -1,3 +1,11 @@
-http://localhost:85/MongoSession/siege-test/test-concurrency.php?s=t2&d1
-http://localhost:85/MongoSession/siege-test/test-concurrency.php?s=t2&d2
-http://localhost:85/MongoSession/siege-test/test-concurrency.php?s=t2&d3
+#
+# These are the URLs to hit. They are of course set of up for my local
+# apache VM. So change the root path as necessary.
+#
+# for v=5, it will have a 250ms delay to demonstrate the effects of locking
+#
+#
+
+http://localhost:85/MongoSession/test-concurrency/test.php?s=ctest&v=1
+http://localhost:85/MongoSession/test-concurrency/test.php?s=ctest&v=2
+http://localhost:85/MongoSession/test-concurrency/test.php?s=ctest&v=3

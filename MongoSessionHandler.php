@@ -5,6 +5,9 @@
  */
 class MongoSessionHandler
 {
+    /** @var MongoSessionHandler */
+    protected static $_instance;
+
     /** @var MongoCollection */
     protected $_mongo;
 
@@ -29,7 +32,7 @@ class MongoSessionHandler
      * @param string $collection
      * @param array $config for the mongo connection
      */
-    public function __construct($db, $collection, Array $config)
+    protected function __construct($db, $collection, Array $config)
     {
         $conf = (empty($config)) ? $this->_defaults : $config; 
         $uri = 'mongodb://'.implode(',', $conf['servers']); 
@@ -42,6 +45,16 @@ class MongoSessionHandler
     }
 
     /**
+     * Gets the current instance
+     *
+     * @return MongoSessionHandler null if register() has not been called yet
+     */
+    public static function getInstance()
+    {
+        return self::$_instance;
+    }
+
+    /**
      * Registers the handler into PHP
      * @param string $db
      * @param string $collection
@@ -50,6 +63,7 @@ class MongoSessionHandler
     public static function register($db, $collection, $config = array())
     {
         $m = new self($db, $collection, $config);
+        self::$_instance = $m;
 
         // boom.
         session_set_save_handler(
@@ -115,6 +129,15 @@ class MongoSessionHandler
         $result = $this->_mongo->update($query, $update, $options);
     }
 
+    /**
+     * Returns the MongoCollection instance
+     * 
+     * @return MongoCollection
+     */
+    public function mongo()
+    {
+        return $this->_mongo;
+    }
 
     /**
      * Open the session, do nothing as we already have a
