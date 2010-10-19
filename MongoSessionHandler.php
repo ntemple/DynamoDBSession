@@ -49,7 +49,6 @@ class MongoSessionHandler
     protected $_defaults = array(
         'servers' => array('localhost:27017'),
         'options' => array(
-            'timeout' => 10, // ms
             'persist' => 'mongo-session'
         )
     );

@@ -1,0 +1,45 @@
+h1. PHP Mongo Session Driver
+
+h2. About
+
+PHP Sessions stored within MongoDB. Supports session locking so it is safe to use in an asynchronous (AJAX) environment.
+
+See <code>test-concurrency/</code> for examples. 
+
+h2. License
+
+It's MIT licensed.
+
+h2. Usage
+
+<pre>
+<code>
+<?php
+require_once('./MongoSessionHandler.php');
+MongoSessionHandler::register('session', 'session'); // db and collection
+?>
+</code>
+</pre>
+
+By default MongoSessionHandler will connect to MongoDB running on localhost. To set up a custom environment that uses many servers do this:
+
+<pre>
+<code>
+<?php
+require_once('./MongoSessionHandler.php');
+$conf = array(
+    // list of servers
+    'servers' => array('mongo1:27017', 'mongo2:27017', 'mongo3:27017'),
+
+    // options for connection
+    'options' => array(
+        'persist' => 'mongo-session',
+        'replicaSet' => true
+    )
+);
+MongoSessionHandler::register('session', 'session', $conf);
+?>
+</code>
+</pre>
+
+When in doubt, read the code. It's only the code. Most of it is locking code and license comment anyways. :)
