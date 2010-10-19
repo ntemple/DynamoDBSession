@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: text/plain');
-require_once('./MongoSessionHandler.php');
+
+require_once('../MongoSessionHandler.php');
 MongoSessionHandler::register('session', 'session');
 
 if ($_GET['s']) {
@@ -10,12 +11,36 @@ if ($_GET['s']) {
 try {
     session_start();
 } catch (Exception $e) {
-    header("HTTP/1.0 500 Shit.");
+    // a failure
+    header("HTTP/1.0 500 oh. shit.");
 }
 
-if (!isset($_SESSION['c'])) {
-    $_SESSION['c'] = 0; 
+if (isset($_GET['v'])) {
+    $start = microtime(true);
+
+    $key = 'k' . $_GET['v'];
+    if (isset($_SESSION[$key])) {
+        $_SESSION[$key]['c']++;
+    } else {
+        $_SESSION[$key]['c'] = 0;
+    }
+
+    $time = microtime(true) - $start;
+    if (isset($_SESSION[$key]['t'])) {
+        $_SESSION[$key]['t'] += $time;
+    } else {
+        $_SESSION[$key]['t'] = $time;
+    }
+    
 }
 
-echo "Count: " . ++$_SESSION['c'];
-//session_destroy();
+print_r($_SESSION); 
+$totalc = 0;
+$totalt = 0;
+foreach (array_keys($_SESSION) as $key) {
+    $totalc += $_SESSION[$key]['c'];
+    $totalt += $_SESSION[$key]['t'];
+}
+$totalt = round($totalt, 6);
+echo "Total Hits: $totalc, Time: ${totalt}s\n";
+
