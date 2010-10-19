@@ -2,7 +2,7 @@ h1. Concurrency Testing Results
 
 h2. Summary
 
-* Mongo w/ Locking : 684.93 trans/sec
+* Mongo w/ Locking : 781.86 trans/sec
 * Mongo NO Locking : 944.29 trans/sec (bad!)
 * PHP File based   : 1225.49 trans/sec
 * Memcache based   : 840.34 trans/sec
@@ -43,45 +43,44 @@ h3. Note
 With locking code enabled, all 10K requests make it through. This is slower but necessary in an asynchronous (AJAX) web application.
 
 <pre>
-Sessions Cleared
 ** SIEGE 2.68
 ** Preparing 5 concurrent users for battle.
 The server is now under siege..      done.
 Transactions:		       10000 hits
 Availability:		      100.00 %
-Elapsed time:		       14.60 secs
+Elapsed time:		       12.79 secs
 Data transferred:	        3.28 MB
 Response time:		        0.01 secs
-Transaction rate:	      684.93 trans/sec
-Throughput:		        0.22 MB/sec
-Concurrency:		        4.59
+Transaction rate:	      781.86 trans/sec
+Throughput:		        0.26 MB/sec
+Concurrency:		        4.78
 Successful transactions:       10000
 Failed transactions:	           0
-Longest transaction:	        2.57
+Longest transaction:	        1.29
 Shortest transaction:	        0.00
 
 Array
 (
     [k2] => Array
         (
-            [c] => 3250
-            [t] => 0.021065950393677
+            [c] => 3405
+            [t] => 0.021645069122314
         )
 
     [k3] => Array
         (
-            [c] => 5048
-            [t] => 0.033654451370239
+            [c] => 4906
+            [t] => 0.032118082046509
         )
 
     [k1] => Array
         (
-            [c] => 1702
-            [t] => 0.010357618331909
+            [c] => 1689
+            [t] => 0.011720418930054
         )
 
 )
-Total Hits: 10000, Time: 0.065078s
+Total Hits: 10000, Time: 0.065484s
 </pre>
 
 h2. MONGO NO Locking
