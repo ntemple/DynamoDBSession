@@ -3,11 +3,10 @@
  * Uses MongoDB as a session handler in PHP
  *
  * @author Benson Wong (mostlygeek@gmail.com)
- *
  * @license http://www.opensource.org/licenses/mit-license.html
  */
 
-/**
+/*
 
 The MIT License
 
@@ -31,7 +30,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
- */
+*/
 
 class MongoSessionHandler
 {
@@ -159,8 +158,7 @@ class MongoSessionHandler
     public function noop() {}
 
     /**
-     * Reads the session from Mongo, create a document if it
-     * doesn't exist. 
+     * Reads the session from Mongo
      *
      * @param string $id
      * @return string
