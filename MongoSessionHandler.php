@@ -144,20 +144,6 @@ class MongoSessionHandler
     }
 
     /**
-     * Releases the lock on the session
-     *
-     * @param string $id
-     *
-     */
-    protected function _unlock($id)
-    {
-        $query  = array('_id' => $id);
-        $update = array('$set' => array('lock' => 0));
-        $options = array('safe' => true);
-        $result = $this->_mongo->update($query, $update, $options);
-    }
-
-    /**
      * Returns the MongoCollection instance
      * 
      * @return MongoCollection
