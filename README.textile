@@ -6,6 +6,8 @@ h2. About
 * Supports session locking so it is safe to use with AJAX apps.
 * Super duper easy to use.
 
+This library is based on work originally from "halfdan/MongoSession":https://github.com/halfdan/MongoSession.
+
 h2. Usage
 
 <pre>
