@@ -1,12 +1,16 @@
-h1. PHP Mongo Session Driver
+h1. WORK IN PROGRESS - JUST BEGINNNG
+h2. Cloned from the MongoDB session, and not yet updated
+
+h1. PHP DynamoDB Session Driver
 
 h2. About
 
-* PHP Sessions stored within MongoDB.
+* PHP Sessions stored within Amazon's DynamoDB.
 * Supports session locking so it is safe to use with AJAX apps.
 * Super duper easy to use.
 
-This library is based on work originally from "halfdan/MongoSession":https://github.com/halfdan/MongoSession.
+This library is based on work originally from "mostlygeek/MongoSession":https://github.com/mostlygeek/MongoSession
+which was based on work originally from "halfdan/MongoSession":https://github.com/halfdan/MongoSession.
 
 h2. Usage
 
