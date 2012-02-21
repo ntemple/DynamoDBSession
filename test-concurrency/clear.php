@@ -1,10 +1,10 @@
 <?php
 /**
- * Clears all PHP sessions out of Mongo
+ * Clears all PHP sessions out of Dynamo by dropping the table
  */
 header('Content-type: text/plain');
-require_once('../MongoSessionHandler.php');
-MongoSessionHandler::register('session', 'session');
+require_once('../DynamoSessionHandler.php');
+DynamoSessionHandler::register('session', 'session');
 
-MongoSessionHandler::getInstance()->mongo()->remove();
+DynamoSessionHandler::getInstance()->getTable()->dropTable();
 echo "Sessions Cleared\n";

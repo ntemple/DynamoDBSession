@@ -1,8 +1,8 @@
 <?php
 header('Content-Type: text/plain');
 
-require_once('../MongoSessionHandler.php');
-MongoSessionHandler::register('session', 'session');
+require_once('../DynamoSessionHandler.php');
+DynamoSessionHandler::register('session', 'session');
 
 if ($_GET['s']) {
     session_id($_GET['s']);
