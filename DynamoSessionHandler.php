@@ -55,7 +55,7 @@ class DynamoSessionHandler
   //  'persist' => 'mongo-session'
   //  )
   //  );
-  
+
   /**
   * Instantiate
   *
@@ -66,6 +66,8 @@ class DynamoSessionHandler
   protected function __construct(/*$db, $collection, Array $config*/)
   {
     $this->_table = new ddbIdTable('session');
+    // $this->_table = new ddbIdTable('session', 10, 10, true);
+      
     //    $conf = (empty($config)) ? $this->_defaults : $config; 
     //    $uri = 'mongodb://'.implode(',', $conf['servers']); 
 
@@ -79,8 +81,9 @@ class DynamoSessionHandler
   public function getTable() {
     return $this->_table;
   }
-
- /**
+  
+  
+  /**
   * Gets the current instance
   *
   * @return DynamoSessionHandler null if register() has not been called yet
@@ -122,6 +125,20 @@ class DynamoSessionHandler
     $remaining = 30000000; // 30 seconds timeout, 30Million microsecs
     $timeout = 5000; // 5000 microseconds (5 ms)
 
+    $result = $this->_table->lock_lock($id);
+
+    if ($result) {
+      return true; 
+    }
+
+    // Possible solution for locking a non-existant document
+    // Either we don't have a document, or we couldn't obtain the lock
+    $doc = $this->_table->get($id);
+    if (!isset($doc['id'])) {
+      $this->write($id, serialize(''));     
+    }
+
+    // Now try to get the lock again.
     do {
       $result = $this->_table->lock_lock($id);
 
@@ -181,7 +198,7 @@ class DynamoSessionHandler
     'd'         => $data,
     'expire'    => time() + intval(ini_get('session.gc_maxlifetime'))
     );
-    
+
     $this->_table->save($doc);
     return true; // @todo error checking    
 
@@ -211,10 +228,10 @@ class DynamoSessionHandler
   */
   public function gc($max)
   {
-// @todo - garbage collection    
-//    $results = $this->_mongo->remove(
-//    array('expire' => array('$lt' => time()))
-//    );
+    // @todo - garbage collection    
+    //    $results = $this->_mongo->remove(
+    //    array('expire' => array('$lt' => time()))
+    //    );
   }
 }
 
@@ -240,7 +257,8 @@ class ddbIdTable {
   * @param mixed $WriteCapacityUnits
   * @return ddbIdTable
   */
-  function __construct($tableName, $ReadCapacityUnits = 10, $WriteCapacityUnits = 5) {
+  function __construct($tableName, $ReadCapacityUnits = 10, $WriteCapacityUnits = 5, $create = false) {
+        
     $this->dynamodb = new AmazonDynamoDB();
     $this->TableName = $tableName;
     $this->schema = array(
@@ -249,10 +267,12 @@ class ddbIdTable {
     'ProvisionedThroughput' => array( 'ReadCapacityUnits' => $ReadCapacityUnits,  'WriteCapacityUnits' => $WriteCapacityUnits  )
     );    
 
-    // Create the table if necessary
-    $status = $this->describeTable();
-    if ($status == 400) {
-      $this->createTable($this->schema);
+    if ($create) {
+      // Create the table if necessary
+      $status = $this->describeTable();
+      if ($status == 400) {
+        $this->createTable($this->schema);
+      }
     }
   }
 
@@ -275,7 +295,7 @@ class ddbIdTable {
     while ((string) $this->response->body->Table->TableStatus !== 'ACTIVE');
     return true;
   }
-  
+
   function dropTable() {
     $this->response = $dynamodb->delete_table(array(  'TableName' => $this->TableName ));
     return $this->response->isOk();
@@ -340,7 +360,7 @@ class ddbIdTable {
 
     return ddbUtil::parse_item($this->response->body->Item);
   }
-  
+
   /**
   * Delete item by id
   * 
@@ -350,10 +370,10 @@ class ddbIdTable {
   function delete($id) {
     $r = new ddbRequest($this->TableName);
     $r->setKey($id);
-    
+
     $params = $r->getParams();
     $this->dynamodb->delete_item($params);
-    
+
     return $this->response->isOk();
 
   }
@@ -484,7 +504,7 @@ class ddbRequest {
     }
   }
 
-  
+
   function setItem($item) {
 
     if (is_object($item)) $item = (array) $item;
@@ -518,7 +538,7 @@ class ddbRequest {
     }
   }
 
-  
+
   function setConsistentRead($value = true) {
     $this->consisteRead = $value;    
   }
