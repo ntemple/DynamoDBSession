@@ -4,7 +4,7 @@ header('Content-Type: text/plain');
 require_once('../DynamoSessionHandler.php');
 DynamoSessionHandler::register('session', 'session');
 
-if ($_GET['s']) {
+if (isset($_GET['s'])) {
     session_id($_GET['s']);
 }
 
